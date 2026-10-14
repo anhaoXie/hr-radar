@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>行业HR需求雷达 · 大学生职业规划</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">HR</div>
+      <div class="brand-text">
+        <strong>行业HR需求雷达</strong>
+        <span id="brandSub">实时岗位 · 职业规划</span>
+      </div>
+    </div>
+
+    <div class="side-filter">
+      <label class="lbl">行业</label>
+      <select id="fIndustry"></select>
+      <label class="lbl">城市</label>
+      <select id="fCity"><option value="全国">全国</option></select>
+      <label class="lbl">数据源</label>
+      <select id="fSource"><option value="all">全部数据源</option></select>
+      <label class="lbl">关键词（可留空）</label>
+      <input id="fKeyword" type="text" placeholder="如：数据分析 / Python">
+      <label class="lbl">时间范围</label>
+      <select id="fDays">
+        <option value="">全部时间</option>
+        <option value="1">近 1 天</option>
+        <option value="7">近 7 天</option>
+        <option value="30" selected>近 30 天</option>
+        <option value="90">近 90 天</option>
+      </select>
+      <button class="btn primary block" id="btnApply">应用筛选</button>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-tab="radar"><i>📡</i><span>需求雷达</span></button>
+      <button class="nav-item" data-tab="jobs"><i>📋</i><span>岗位明细</span></button>
+      <button class="nav-item" data-tab="career"><i>🧭</i><span>职业规划</span></button>
+      <button class="nav-item" data-tab="match"><i>🎯</i><span>岗位匹配</span></button>
+      <button class="nav-item" data-tab="interview"><i>🎤</i><span>面试准备</span></button>
+      <button class="nav-item" data-tab="survey"><i>🧩</i><span>方向测评</span></button>
+      <button class="nav-item" data-tab="trend"><i>📈</i><span>趋势追踪</span></button>
+      <button class="nav-item" data-tab="refresh"><i>🔄</i><span>实时刷新</span></button>
+      <button class="nav-item" data-tab="settings"><i>⚙️</i><span>数据源设置</span></button>
+    </nav>
+
+    <div class="side-foot">
+      <div id="dbStat" class="muted">岗位库：—</div>
+      <div class="muted tiny">数据来自公开招聘渠道，仅用于学习与职业规划参考。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1 id="pageTitle">需求雷达</h1>
+      <div class="topbar-right">
+        <span id="lastRefresh" class="pill muted">尚未刷新</span>
+        <button class="btn" id="btnQuickRefresh">一键刷新当前行业</button>
+      </div>
+    </header>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <!-- ============================ 需求雷达 ============================ -->
+    <section class="tab active" id="tab-radar">
+      <div class="kpis" id="kpis"></div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head">
+            <h2>技能需求榜</h2>
+            <span class="hint">按岗位出现率排序 · 条长=出现比例</span>
+          </div>
+          <div id="skillBars" class="bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>技能类别分布</h2>
+            <span class="hint">哪一类能力最被需要</span>
+          </div>
+          <div id="catBars" class="bars"></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><h2>薪资基准</h2><span class="hint">按币种分组，不混算</span></div>
+          <div id="salaryBox"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>学历与城市</h2><span class="hint">硬门槛在哪里</span></div>
+          <div id="degreeCity"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>数据洞察</h2><span class="hint">自动从数据里读出来的结论</span></div>
+        <ul id="insights" class="insights"></ul>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><h2>用人最多的公司</h2></div>
+          <div id="companyTop" class="bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>数据构成</h2></div>
+          <div id="sourceMix" class="bars"></div>
+          <div id="freshBox" class="mini-note"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 岗位明细 ============================ -->
+    <section class="tab" id="tab-jobs">
+      <div class="card">
+        <div class="card-head">
+          <h2>岗位明细</h2>
+          <div class="row-actions">
+            <span id="jobsCount" class="hint"></span>
+            <button class="btn small" id="btnExport">导出 CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="jobsTable">
+            <thead><tr>
+              <th>岗位</th><th>公司</th><th>城市</th><th>学历</th><th>薪资</th>
+              <th>要求技能</th><th>来源</th><th>更新时间</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <button class="btn small" id="jobsPrev">上一页</button>
+          <span id="jobsPage" class="hint">第 1 页</span>
+          <button class="btn small" id="jobsNext">下一页</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 职业规划 ============================ -->
+    <section class="tab" id="tab-career">
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-head"><h2>我的档案</h2><span class="hint">填得越细，诊断越准</span></div>
+          <div class="form-grid">
+            <label>专业<input id="pMajor" placeholder="如：计算机科学与技术"></label>
+            <label>学历
+              <select id="pDegree"><option>大专</option><option selected>本科</option><option>硕士</option><option>博士</option></select>
+            </label>
+            <label>年级
+              <select id="pGrade"><option>大一</option><option>大二</option><option selected>大三</option><option>大四</option><option>研究生</option></select>
+            </label>
+            <label>期望城市<input id="pCity" placeholder="如：杭州"></label>
+            <label class="span2">目标岗位<input id="pJob" placeholder="如：数据分析实习生 / 后端开发"></label>
+          </div>
+          <div class="card-head sub"><h3>我会的技能（拖动表示熟练度）</h3></div>
+          <div class="skill-picker">
+            <div class="sp-input">
+              <input id="skillAdd" list="skillList" placeholder="输入技能名，回车添加，如 Python">
+              <datalist id="skillList"></datalist>
+              <button class="btn small" id="btnAddSkill">添加</button>
+            </div>
+            <div id="mySkills" class="chips"></div>
+            <div class="quick-pick" id="quickPick"></div>
+          </div>
+          <div class="row-actions">
+            <button class="btn primary" id="btnDiagnose">生成诊断与学习路径</button>
+            <button class="btn small" id="btnSaveProfile">保存档案</button>
+            <select id="profileList" class="inline-select"><option value="">载入已存档案…</option></select>
+          </div>
+        </div>
+
+        <div class="card" id="diagnoseCard">
+          <div class="card-head"><h2>诊断结果</h2></div>
+          <div id="diagnoseBody" class="empty">填写左侧档案后点击「生成诊断与学习路径」。</div>
+        </div>
+      </div>
+
+      <div class="card" id="pathCard" style="display:none">
+        <div class="card-head"><h2>学习路径</h2><span class="hint">每个技能都要产出一个「能给别人看的东西」</span></div>
+        <div id="pathBody" class="phases"></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><h2>硬门槛自查</h2></div>
+          <div id="hardChecks"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>专业对口度</h2></div>
+          <div id="majorFit"></div>
+          <div id="riskGuide" class="mini-note"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>分年级行动时间线</h2><span class="hint" id="timelineGrade"></span></div>
+        <div id="timeline" class="timeline"></div>
+      </div>
+    </section>
+
+    <!-- ============================ 岗位匹配 ============================ -->
+    <section class="tab" id="tab-match">
+      <div class="card">
+        <div class="card-head">
+          <h2>匹配我的真实岗位</h2>
+          <span class="hint">用左边的档案算匹配度，帮你避开简历关就会被刷的岗位</span>
+        </div>
+        <div class="row-actions">
+          <button class="btn primary" id="btnMatch">开始匹配</button>
+          <span id="matchAdvice" class="hint"></span>
+        </div>
+        <div id="matchList" class="match-list"></div>
+      </div>
+    </section>
+
+    <!-- ============================ 面试准备 ============================ -->
+    <section class="tab" id="tab-interview">
+      <div class="card">
+        <div class="card-head"><h2>高频问题（基于真实岗位要求生成）</h2></div>
+        <div id="interviewTech" class="qa"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>行为面试题</h2><span class="hint">企业最在意的动机与匹配度都在这类题里</span></div>
+        <div id="interviewBehavior" class="qa"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>面试前自查清单</h2></div>
+        <div id="interviewChecklist" class="checklist"></div>
+        <div id="interviewNote" class="mini-note"></div>
+      </div>
+    </section>
+
+    <!-- ============================ 方向测评 ============================ -->
+    <section class="tab" id="tab-survey">
+      <div class="card">
+        <div class="card-head"><h2>我更适合往哪个方向走？</h2>
+          <span class="hint">拖动滑块（0=完全不喜欢，5=非常喜欢），得出行业倾向排序</span></div>
+        <div id="surveyForm" class="survey"></div>
+        <div class="row-actions"><button class="btn primary" id="btnSurvey">看看结果</button></div>
+      </div>
+      <div class="card" id="surveyResultCard" style="display:none">
+        <div class="card-head"><h2>推荐方向</h2><span class="hint">按你的兴趣倾向排序</span></div>
+        <div id="surveyResult" class="survey-result"></div>
+      </div>
+    </section>
+
+    <!-- ============================ 趋势追踪 ============================ -->
+    <section class="tab" id="tab-trend">
+      <div class="card">
+        <div class="card-head"><h2>岗位量趋势</h2>
+          <span class="hint">每刷新一次自动记一个点，刷新两次以上就能看到趋势</span></div>
+        <div id="trendChart"></div>
+        <div id="trendNote" class="mini-note"></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><h2>技能需求上升最快</h2><span class="hint">对比最早与最新快照的占比变化</span></div>
+          <div id="trendUp" class="bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>技能需求下降最快</h2></div>
+          <div id="trendDown" class="bars"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>刷新历史</h2></div>
+        <div id="runHistory" class="run-list"></div>
+      </div>
+    </section>
+
+    <!-- ============================ 实时刷新 ============================ -->
+    <section class="tab" id="tab-refresh">
+      <div class="card">
+        <div class="card-head"><h2>实时抓取</h2><span class="hint">从公开招聘渠道拉取最新岗位，写入本地库</span></div>
+        <div class="form-grid">
+          <label>目标行业（可多选）
+            <div id="refreshIndustries" class="checkbox-grid"></div>
+          </label>
+          <label class="span2">自定义关键词（英文逗号分隔，留空则用行业的默认岗位词）
+            <input id="refreshKeywords" placeholder="如：数据分析,算法,产品经理">
+          </label>
+          <label>城市
+            <select id="refreshCity"><option value="全国">全国</option></select>
+          </label>
+          <label>数据源（可多选）
+            <div id="refreshSources" class="checkbox-grid"></div>
+          </label>
+        </div>
+        <div class="row-actions">
+          <button class="btn primary" id="btnStartRefresh">开始刷新</button>
+          <button class="btn small" id="btnStopPoll" style="display:none">停止轮询</button>
+          <span class="hint">礼貌抓取：同站请求间隔 <span id="intervalHint">0.35</span>s，请勿高频反复刷新。</span>
+        </div>
+        <div id="refreshProgress" class="progress hidden">
+          <div class="kpis small" id="refreshKpis"></div>
+          <div class="log" id="refreshLog"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>库内数据源构成</h2></div>
+        <div id="sourceStat" class="bars"></div>
+      </div>
+    </section>
+
+    <!-- ============================ 设置 ============================ -->
+    <section class="tab" id="tab-settings">
+      <div class="card">
+        <div class="card-head"><h2>数据源开关</h2><span class="hint">关掉的源不会参与刷新</span></div>
+        <div id="sourceList" class="src-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>抓取参数</h2></div>
+        <div class="form-grid">
+          <label>每源最多关键词数<input id="sMaxKw" type="number" min="1" max="30"></label>
+          <label>每次最多补全 JD 数<input id="sDetailLimit" type="number" min="0" max="500"></label>
+          <label>请求间隔（秒）<input id="sInterval" type="number" step="0.05" min="0"></label>
+          <label>并发数<input id="sConc" type="number" min="1" max="12"></label>
+          <label>默认城市<input id="sCity"></label>
+          <label>定时刷新（分钟，0=关）<input id="sAuto" type="number" min="0"></label>
+          <label class="inline"><input type="checkbox" id="sFetchJd"> 抓取岗位详情页补全 JD</label>
+        </div>
+        <div class="row-actions">
+          <button class="btn primary" id="btnSaveSettings">保存设置</button>
+          <button class="btn small" id="btnReindex">用最新技能词典重算全库标签</button>
+          <span id="settingsMsg" class="hint"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>自定义接口（企业/授权 API）</h2>
+          <span class="hint">把学校就业系统或你已购买配额的招聘 API 接进来</span></div>
+        <div class="form-grid">
+          <label class="span2">URL 模板（支持 {keyword} {city} {page}）
+            <input id="cUrl" placeholder="https://api.example.com/jobs?kw={keyword}&city={city}"></label>
+          <label>请求方法<select id="cMethod"><option>GET</option><option>POST</option></select></label>
+          <label>列表路径（点号）<input id="cListPath" placeholder="data.list"></label>
+          <label class="span2">请求头 JSON（如鉴权）<textarea id="cHeaders" rows="2" placeholder='{"Authorization":"Bearer xxx"}'></textarea></label>
+          <label class="span2">POST 请求体模板（可选）<textarea id="cBody" rows="2" placeholder='{"kw":"{keyword}","page":{page}}'></textarea></label>
+          <label class="span2">字段映射 JSON
+            <textarea id="cMap" rows="4"
+              placeholder='{"id":"id","title":"title","company":"company","city":"city","salary":"salary","degree":"degree","industry":"industry","jd":"description","url":"url"}'></textarea></label>
+        </div>
+        <div class="row-actions">
+          <button class="btn primary" id="btnSaveCustom">保存自定义接口</button>
+          <span id="customMsg" class="hint"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<script src="/app.js"></script>
+</body>
+</html>
